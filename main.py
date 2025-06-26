@@ -1,8 +1,6 @@
 import tkinter as tk
-from tkinter import messagebox, simpledialog
 import csv
 import os
-import hashlib
 from datetime import datetime
 
 app_state = {
@@ -21,11 +19,11 @@ def initialize_csv(file_path, headers):
             with open(file_path, mode='w', newline='') as file:
                 writer = csv.writer(file)
                 writer.writerow(headers)
-        except IOError as e:
-            messagebox.showerror("File Error", f"Could not create file {file_path}: {e}")
+        except:
+            print("File Error")
 
 
-def setup_files():
+def setupFiles():
     initialize_csv(USERS_FILE, ['username', 'password'])
     initialize_csv(ACTIVITIES_FILE, ['username', 'date', 'activity_type', 'duration', 'intensity'])
     initialize_csv(NUTRITION_FILE, ['username', 'date', 'calories', 'protein', 'carbs', 'fats'])
@@ -38,8 +36,8 @@ def read_csv(file_path):
     try:
         with open(file_path, mode='r', newline='') as file:
             return list(csv.DictReader(file))
-    except (IOError, csv.Error) as e:
-        messagebox.showerror("Read Error", f"Could not read from {file_path}: {e}")
+    except:
+        print("could not read file")
         return []
 
 
@@ -52,12 +50,12 @@ def append_to_csv(file_path, data_row):
                 writer.writeheader()
             writer.writerow(data_row)
         return True
-    except IOError as e:
-        messagebox.showerror("Write Error", f"Could not write to {file_path}: {e}")
+    except:
+        print(" could not write to file")
         return False
 
 
-def update_goal(username, target_weight, workout_frequency):
+def updateGoal(username, target_weight, workout_frequency):
     records = read_csv(GOALS_FILE)
     updated = False
     new_records = []
@@ -80,8 +78,8 @@ def update_goal(username, target_weight, workout_frequency):
             writer.writeheader()
             writer.writerows(new_records)
         return True
-    except IOError as e:
-        messagebox.showerror("Update Error", f"Could not update goals: {e}")
+    except:
+        print("Could not update goals")
         return False
 
 def switch_frame(master, frame_creator, *args):
@@ -97,17 +95,15 @@ def login(master, username_entry, password_entry):
 
     if not username or not password:
         print("Please inout username and password.")
-        messagebox.showerror("Please inout username and password.")
         return
 
     users = read_csv(USERS_FILE)
     for user in users:
         if user['username'] == username and user['password'] == password:
             app_state['current_user'] = username
-            switch_frame(master, create_main_menu_frame)
+            switch_frame(master, main_menu)
             return
     print("Invalid username or password.")
-    messagebox.showerror("Invalid username or password.")
 
 def register(username_entry, password_entry):
     username = username_entry.get()
@@ -115,24 +111,21 @@ def register(username_entry, password_entry):
 
     if not username or not password:
         print("Please inout username and password.")
-        messagebox.showerror("Please inout username and password.")
         return
 
     users = read_csv(USERS_FILE)
     for user in users:
         if user['username'] == username:
             print("Username already exists.")
-            messagebox.showerror("Username already exists.")
             return
 
     if append_to_csv(USERS_FILE, {'username': username, 'password': password}):
         print("Registration successful")
-        messagebox.showinfo("Registration successful")
         username_entry.delete(0, tk.END)
         password_entry.delete(0, tk.END)
 
 
-def save_activity(master, activity_entry, duration_entry, intensity_entry):
+def saveActivity(master, activity_entry, duration_entry, intensity_entry):
     activity_type = activity_entry.get()
     duration = duration_entry.get()
     intensity = intensity_entry.get()
@@ -140,76 +133,67 @@ def save_activity(master, activity_entry, duration_entry, intensity_entry):
 
     if activity_type == "" or duration == "" or intensity == "":
         print("All fields are required.")
-        messagebox.showerror("All fields are required.")
         return
     try:
         float(duration)
-    except ValueError:
+    except:
         print("Duration must be a number.")
-        messagebox.showerror("Duration must be a number.")
         return
 
     data = {'username': app_state['current_user'], 'date': date, 'activity_type': activity_type, 'duration': duration, 'intensity': intensity}
     if append_to_csv(ACTIVITIES_FILE, data):
         print("Activity logged successfully!")
-        messagebox.showinfo("Activity logged successfully!")
-        switch_frame(master, create_main_menu_frame)
+        switch_frame(master, main_menu)
 
-def save_nutrition(master, calories_entry, protein_entry, carbs_entry, fats_entry):
+def saveNutrition(master, calories_entry, protein_entry, carbs_entry, fats_entry):
     calories, protein, carbs, fats = calories_entry.get(), protein_entry.get(), carbs_entry.get(), fats_entry.get()
     date = datetime.now().strftime("%Y-%m-%d")
 
 
     if calories == "" or protein == "" or carbs == "" or fats == "":
         print("All nutrition fields are required.")
-        messagebox.showerror("All nutrition fields are required.")
         return
     
     for value, name in [(calories, "Calories"), (protein, "Protein"), (carbs, "Carbs"), (fats, "Fats")]:
         try:
             float(value)
-        except ValueError:
+        except:
             print(f"{name} must be a valid number.")
-            messagebox.showerror(f"{name} must be a valid number.")
             return
 
 
     data = {'username': app_state['current_user'], 'date': date, 'calories': calories, 'protein': protein, 'carbs': carbs, 'fats': fats}
     if append_to_csv(NUTRITION_FILE, data):
         print("Nutrition logged successfully!")
-        messagebox.showinfo("Nutrition logged successfully!")
-        switch_frame(master, create_main_menu_frame)
+        switch_frame(master, main_menu)
 
 
 
-def save_goals(master, weight_entry, frequency_entry):
+def saveGoal(master, weight_entry, frequency_entry):
     target_weight = weight_entry.get()
     workout_frequency = frequency_entry.get()
 
     if not target_weight or not workout_frequency:
         print("Both goal fields are required.")
-        messagebox.showerror("Both goal fields are required.")
         return
     try:
         float(target_weight)
         int(workout_frequency)
-    except ValueError:
+    except:
         print("Please enter valid numbers for goals.")
-        messagebox.showerror("Please enter valid numbers for goals.")
         return
 
-    if update_goal(app_state['current_user'], target_weight, workout_frequency):
+    if updateGoal(app_state['current_user'], target_weight, workout_frequency):
         print("Goals saved successfully!")
-        messagebox.showinfo("Goals saved successfully!")
-        switch_frame(master, create_main_menu_frame)
+        switch_frame(master, main_menu)
 
 
 def logout(master):
     app_state['current_user'] = None
-    switch_frame(master, create_login_register_frame)
+    switch_frame(master, login_register_page)
 
 
-def create_login_register_frame(master):
+def login_register_page(master):
     frame = tk.Frame(master)
     
     tk.Label(frame, text="Username", font=("Helvetica", 12)).pack(pady=5)
@@ -227,21 +211,21 @@ def create_login_register_frame(master):
     return frame
 
 
-def create_main_menu_frame(master):
+def main_menu(master):
     frame = tk.Frame(master)
     
     tk.Label(frame, text=f"Welcome, {app_state['current_user']}!", font=("Helvetica", 16, "bold")).pack(pady=10)
-    tk.Button(frame, text="Log Activity", command=lambda: switch_frame(master, create_log_activity_frame), font=("Helvetica", 12)).pack(fill="x", pady=5, padx=20)
-    tk.Button(frame, text="Track Nutrition", command=lambda: switch_frame(master, create_track_nutrition_frame), font=("Helvetica", 12)).pack(fill="x", pady=5, padx=20)
-    tk.Button(frame, text="View Progress", command=lambda: switch_frame(master, create_view_progress_frame), font=("Helvetica", 12)).pack(fill="x", pady=5, padx=20)
-    tk.Button(frame, text="Set Goals", command=lambda: switch_frame(master, create_set_goals_frame), font=("Helvetica", 12)).pack(fill="x", pady=5, padx=20)
-    tk.Button(frame, text="Logout", command=lambda: logout(master), font=("Helvetica", 12, "bold"), fg="red").pack(fill="x", pady=10, padx=20)
+    tk.Button(frame, text="Log Activity", command=lambda: switch_frame(master, log_activity_page), font=("Helvetica", 12)).pack(fill="x", pady=5, padx=20)
+    tk.Button(frame, text="Track Nutrition", command=lambda: switch_frame(master, track_nutrition_page), font=("Helvetica", 12)).pack(fill="x", pady=5, padx=20)
+    tk.Button(frame, text="View Progress", command=lambda: switch_frame(master, progress_page), font=("Helvetica", 12)).pack(fill="x", pady=5, padx=20)
+    tk.Button(frame, text="Set Goals", command=lambda: switch_frame(master, set_goal_page), font=("Helvetica", 12)).pack(fill="x", pady=5, padx=20)
+    tk.Button(frame, text="Logout", command=lambda: logout(master), font=("Helvetica", 12, "bold")).pack(fill="x", pady=10, padx=20)
     
     return frame
 
 
 
-def create_log_activity_frame(master):
+def log_activity_page(master):
     frame = tk.Frame(master)
     
     tk.Label(frame, text="Log Your Activity", font=("Helvetica", 14, "bold")).pack(pady=10)
@@ -258,13 +242,13 @@ def create_log_activity_frame(master):
     intensity_entry = tk.Entry(frame)
     intensity_entry.pack(pady=5, padx=20, fill='x')
     
-    tk.Button(frame, text="Save Activity", command=lambda: save_activity(master, activity_entry, duration_entry, intensity_entry), font=("Helvetica", 12)).pack(pady=20)
-    tk.Button(frame, text="Back", command=lambda: switch_frame(master, create_main_menu_frame), font=("Helvetica", 10)).pack()
+    tk.Button(frame, text="Save Activity", command=lambda: saveActivity(master, activity_entry, duration_entry, intensity_entry), font=("Helvetica", 12)).pack(pady=20)
+    tk.Button(frame, text="Back", command=lambda: switch_frame(master, main_menu), font=("Helvetica", 10)).pack()
     
     return frame
 
 
-def create_track_nutrition_frame(master):
+def track_nutrition_page(master):
     frame = tk.Frame(master)
     tk.Label(frame, text="Track Your Nutrition", font=("Helvetica", 14, "bold")).pack(pady=10)
     tk.Label(frame, text="Calories:").pack()
@@ -286,12 +270,12 @@ def create_track_nutrition_frame(master):
     button_frame = tk.Frame(frame)
     button_frame.pack(pady=20)
     
-    tk.Button(button_frame, text="Save Nutrition Log", command=lambda: save_nutrition(master, calories_entry, protein_entry, carbs_entry, fats_entry), font=("Helvetica", 12)).pack(side="left", padx=10)
-    tk.Button(button_frame, text="Back", command=lambda: switch_frame(master, create_main_menu_frame), font=("Helvetica", 12)).pack(side="right", padx=10)
+    tk.Button(button_frame, text="Save Nutrition Log", command=lambda: saveNutrition(master, calories_entry, protein_entry, carbs_entry, fats_entry), font=("Helvetica", 12)).pack(side="left", padx=10)
+    tk.Button(button_frame, text="Back", command=lambda: switch_frame(master, main_menu), font=("Helvetica", 12)).pack(side="right", padx=10)
     
     return frame
 
-def create_view_progress_frame(master):
+def progress_page(master):
     frame = tk.Frame(master)
     
     tk.Label(frame, text="Your Progress", font=("Helvetica", 16, "bold")).pack(pady=10)
@@ -329,12 +313,12 @@ def create_view_progress_frame(master):
     progress_text.insert(tk.END, progress_report)
     progress_text.config(state=tk.DISABLED)
 
-    tk.Button(frame, text="Back to Menu", command=lambda: switch_frame(master, create_main_menu_frame), font=("Helvetica", 12)).pack(pady=10)
+    tk.Button(frame, text="Back to Menu", command=lambda: switch_frame(master, main_menu), font=("Helvetica", 12)).pack(pady=10)
     
     return frame
 
 
-def create_set_goals_frame(master):
+def set_goal_page(master):
     frame = tk.Frame(master)
     tk.Label(frame, text="Set Your Goals", font=("Helvetica", 14, "bold")).pack(pady=10)
     tk.Label(frame, text="Target Weight (kg):").pack()
@@ -352,8 +336,8 @@ def create_set_goals_frame(master):
         weight_entry.insert(0, goal.get('target_weight', ''))
         frequency_entry.insert(0, goal.get('workout_frequency', ''))
 
-    tk.Button(frame, text="Save Goals", command=lambda: save_goals(master, weight_entry, frequency_entry), font=("Helvetica", 12)).pack(pady=20)
-    tk.Button(frame, text="Back", command=lambda: switch_frame(master, create_main_menu_frame), font=("Helvetica", 10)).pack()
+    tk.Button(frame, text="Save Goals", command=lambda: saveGoal(master, weight_entry, frequency_entry), font=("Helvetica", 12)).pack(pady=20)
+    tk.Button(frame, text="Back", command=lambda: switch_frame(master, main_menu), font=("Helvetica", 10)).pack()
     
     return frame
 
@@ -367,9 +351,9 @@ def main():
     root.geometry("400x550")
     root.eval('tk::PlaceWindow . center')
 
-    setup_files()
+    setupFiles()
 
-    switch_frame(root, create_login_register_frame)
+    switch_frame(root, login_register_page)
 
     root.mainloop()
 
