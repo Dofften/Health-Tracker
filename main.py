@@ -125,13 +125,14 @@ def register(username_entry, password_entry):
         password_entry.delete(0, tk.END)
 
 
-def saveActivity(master, activity_entry, duration_entry, intensity_entry):
+def saveActivity(master, activity_entry, duration_entry, intensity_entry, weight_entry):
     activity_type = activity_entry.get()
     duration = duration_entry.get()
     intensity = intensity_entry.get()
+    weight = weight_entry.get()
     date = datetime.now().strftime("%Y-%m-%d")
 
-    if activity_type == "" or duration == "" or intensity == "":
+    if activity_type == "" or duration == "" or intensity == "" or weight == "":
         print("All fields are required.")
         return
     try:
@@ -140,7 +141,7 @@ def saveActivity(master, activity_entry, duration_entry, intensity_entry):
         print("Duration must be a number.")
         return
 
-    data = {'username': app_state['current_user'], 'date': date, 'activity_type': activity_type, 'duration': duration, 'intensity': intensity}
+    data = {'username': app_state['current_user'], 'date': date, 'activity_type': activity_type, 'duration': duration, 'intensity': intensity, 'weight': weight}
     if append_to_csv(ACTIVITIES_FILE, data):
         print("Activity logged successfully!")
         switch_frame(master, main_menu)
@@ -241,8 +242,12 @@ def log_activity_page(master):
     tk.Label(frame, text="Intensity (Low, Medium, High):").pack()
     intensity_entry = tk.Entry(frame)
     intensity_entry.pack(pady=5, padx=20, fill='x')
+
+    tk.Label(frame, text="Weight(in kgs):").pack()
+    weight_entry = tk.Entry(frame)
+    weight_entry.pack(pady=5, padx=20, fill='x')
     
-    tk.Button(frame, text="Save Activity", command=lambda: saveActivity(master, activity_entry, duration_entry, intensity_entry), font=("Helvetica", 12)).pack(pady=20)
+    tk.Button(frame, text="Save Activity", command=lambda: saveActivity(master, activity_entry, duration_entry, intensity_entry, weight_entry), font=("Helvetica", 12)).pack(pady=20)
     tk.Button(frame, text="Back", command=lambda: switch_frame(master, main_menu), font=("Helvetica", 10)).pack()
     
     return frame
@@ -296,17 +301,44 @@ def progress_page(master):
     goals = [row for row in read_csv(GOALS_FILE) if row['username'] == user]
     goal_text = "No goals set."
     
+    
+    weights = [row for row in read_csv(ACTIVITIES_FILE) if row['username'] == user and 'weight' in row]
+    if len(weights) != 0:
+        current_weight = float(weights[-1]['weight'])
+        if len(weights) > 1:
+            weight_change = abs(current_weight - float(weights[0]['weight']))
+        else:
+            weight_change = 0
+    else:
+        current_weight = 'N/A'
+        weight_change = 'N/A'
+    recommendations_text = "Here are some recommendations based on your progress:\n"
     if goals:
         goal = goals[0]
         goal_text = f"Target Weight: {goal.get('target_weight', 'N/A')} kg\nWeekly Workouts: {goal.get('workout_frequency', 'N/A')}"
+        if goal.get('target_weight') == current_weight:
+            recommendations_text += "You have reached your target weight! Keep up the good work!\n"
+        if goal.get('workout_frequency') == total_workouts:
+            recommendations_text += "You are meeting your workout frequency goal! Keep it up!\n"
+        if total_workouts < int(goal.get('workout_frequency', 0)):
+            recommendations_text += f"You have {int(goal.get('workout_frequency', 0)) - total_workouts} workouts left to meet your weekly goal. Keep pushing!\n"
+        if total_workouts > int(goal.get('workout_frequency', 0)):
+            recommendations_text += f"You have exceeded your goal by {int(goal.get('workout_frequency', 0)) - total_workouts} workouts. Great job!\n"
+        if current_weight > float(goal.get('target_weight', 0)):
+            recommendations_text += f"You are {current_weight - float(goal.get('target_weight', 0))}kgs away from your goal. You can do this!\n"
 
     progress_report = (f"Progress Report for: {user}\n"
                        f"----------------------------------\n"
                        f"Total Workouts Logged: {total_workouts}\n"
                        f"Total Duration: {total_duration:.2f} minutes\n"
                        f"Estimated Calories Burned: {total_calories_burned:.2f}\n"
-                       f"Estimated Steps: {int(estimated_steps)}\n\n"
-                       f"--- Your Goals ---\n{goal_text}")
+                       f"Estimated Steps: {int(estimated_steps)}\n"
+                       f"Current Weight: {current_weight} kg\n"
+                       f"Weight Change: {weight_change} kg\n\n"
+                       f"--- Your Goals ---\n{goal_text}\n\n"
+                       f"--- Recomendations ---\n{recommendations_text}\n")
+                        
+    
 
     progress_text.config(state=tk.NORMAL)
     progress_text.delete('1.0', tk.END)

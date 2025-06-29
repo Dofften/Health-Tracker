@@ -1,4 +1,3 @@
-username,date,activity_type,duration,intensity
-user1,2025-06-25,Running,5,Low
-user1,2025-06-25,Walking,30,Medium
-user1,2025-06-26,Run,10,Medium
+username,date,activity_type,duration,intensity,weight
+user1,2025-06-29,Running,23,Low,97
+user1,2025-06-29,Walking,90,Medium,93
